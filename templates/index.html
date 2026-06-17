@@ -195,7 +195,9 @@
             
             const tl = gsap.timeline();
             tl.fromTo(".stagger-nav", { y: -20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-              .fromTo(".hero-text", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" }, "-=0.4")
+              // Added the hero-badge animation to drop in and fade up
+              .fromTo(".hero-badge", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 1, ease: "back.out(1.5)" }, "-=0.4")
+              .fromTo(".hero-text", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" }, "-=0.6")
               .fromTo(".hero-subtext", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.6")
               .fromTo(".stagger-grid", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out" }, "-=0.4");
 
