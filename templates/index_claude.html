@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <!-- ============================================================
+       AURA — Premium Wallpaper Gallery
+       Single-file Flask template · Tailwind CSS + GSAP
+       Drop into /templates and reference as: render_template('aura.html', wallpapers=wallpapers)
+  ============================================================ -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura — Premium Wallpaper Gallery</title>
+  <meta name="description" content="A curated collection of premium wallpapers for the discerning eye." />
+  <meta name="theme-color" content="#08080b" />
+
+  <!-- ── Google Fonts ────────────────────────────────────────── -->
+  <!-- Playfair Display: editorial serif for headlines & display  -->
+  <!-- Inter: precision sans-serif for UI, labels, micro-copy     -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- ── Tailwind CSS CDN ────────────────────────────────────── -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ── Tailwind Custom Token System ───────────────────────── -->
+  <!-- All custom colours, type stacks, and background utilities  -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            /* ── Midnight Premium Palette ──────────────────── */
+            'aura-void':     '#08080b',   /* deepest black — body bg    */
+            'aura-base':     '#0d0d11',   /* page background             */
+            'aura-surface':  '#111115',   /* card & surface colour       */
+            'aura-raised':   '#18181d',   /* elevated ui elements        */
+            'aura-border':   '#242429',   /* hairline borders            */
+            'aura-text':     '#e2ddd5',   /* warm off-white — body copy  */
+            'aura-muted':    '#6b6867',   /* secondary / de-emphasised   */
+            'aura-faint':    '#3a3835',   /* barely-there ghost text     */
+            'aura-gold':     '#c8a96e',   /* editorial accent — sparse!  */
+          },
+          fontFamily: {
+            'display': ['"Playfair Display"', 'Georgia', 'serif'],
+            'body':    ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    };
+  </script>
+
+  <!-- ── GSAP + ScrollTrigger CDN ───────────────────────────── -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- ============================================================
+       INTERNAL STYLES
+       Custom properties, masonry layout, card interactions,
+       navigation, and all micro-details Tailwind can't express.
+  ============================================================ -->
+  <style>
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design Tokens ──────────────────────────────────────── */
+    :root {
+      --nav-h:            68px;
+      --gold:             #c8a96e;
+      --gold-dim:         rgba(200, 169, 110, 0.18);
+      --ease-expo:        cubic-bezier(0.16, 1, 0.3, 1);     /* smooth & weighty  */
+      --ease-quint:       cubic-bezier(0.22, 1, 0.36, 1);    /* slightly snappier */
+      --ease-back:        cubic-bezier(0.34, 1.56, 0.64, 1); /* gentle overshoot  */
+      --card-radius:      10px;
+      --page-gutter:      clamp(1.25rem, 5vw, 5rem);
+    }
+
+    /* ── Base ───────────────────────────────────────────────── */
+    html {
+      -webkit-font-smoothing:  antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: #08080b;
+      color: #e2ddd5;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+      /* Ensure body never causes a horizontal scroll during animations */
+    }
+
+    /* ── Custom Scrollbar ───────────────────────────────────── */
+    ::-webkit-scrollbar               { width: 4px; }
+    ::-webkit-scrollbar-track         { background: #08080b; }
+    ::-webkit-scrollbar-thumb         { background: #242429; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover   { background: var(--gold); }
+
+    /* ── Text Selection ─────────────────────────────────────── */
+    ::selection { background: rgba(200, 169, 110, 0.18); color: #e2ddd5; }
+
+    /* ================================================================
+       NAVIGATION
+       Fixed glassmorphism bar. GSAP sets initial translateY(-100%).
+    ================================================================ */
+    #aura-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      z-index: 200;
+      /* Glassmorphism core */
+      background: rgba(8, 8, 11, 0.68);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      border-bottom: 1px solid rgba(36, 36, 41, 0.6);
+      transition: box-shadow 0.4s ease;
+      /* GSAP entrance — initial state */
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    #aura-nav.is-scrolled {
+      box-shadow: 0 2px 48px rgba(0, 0, 0, 0.45);
+    }
+
+    /* ── Nav Link Atoms ─────────────────────────────────────── */
+    .nav-link {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.73rem;
+      font-weight: 400;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #6b6867;
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 2px;
+      transition: color 0.25s ease;
+    }
+    /* Animated underline */
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 1px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.35s var(--ease-expo);
+    }
+    .nav-link:hover          { color: #e2ddd5; }
+    .nav-link:hover::after   { transform: scaleX(1); }
+    .nav-link.is-active      { color: var(--gold); }
+    .nav-link.is-active::after { transform: scaleX(1); }
+
+    /* ── Hamburger Button ───────────────────────────────────── */
+    .hamburger {
+      width: 26px;
+      height: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+    .hamburger__bar {
+      display: block;
+      width: 100%;
+      height: 1px;
+      background: #e2ddd5;
+      transform-origin: center;
+      transition:
+        transform  0.4s var(--ease-expo),
+        opacity    0.2s ease,
+        width      0.35s var(--ease-expo);
+    }
+    /* Morph into ✕ when open */
+    .hamburger.is-open .hamburger__bar:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .hamburger.is-open .hamburger__bar:nth-child(2) { opacity: 0; width: 0; }
+    .hamburger.is-open .hamburger__bar:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+    /* ================================================================
+       MOBILE FULLSCREEN MENU
+       Slides in from the right. JS adds .is-open.
+    ================================================================ */
+    #mobile-menu {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: rgba(8, 8, 11, 0.97);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2rem 2.5rem;
+      /* Closed by default */
+      transform: translateX(100%);
+      transition: transform 0.6s var(--ease-expo);
+      /* Prevent pointer events when closed */
+      pointer-events: none;
+    }
+    #mobile-menu.is-open {
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    /* Mobile nav links — Playfair Display, giant, editorial */
+    .mobile-nav-link {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 7vw, 3.5rem);
+      font-weight: 400;
+      color: #3a3835;
+      text-decoration: none;
+      display: block;
+      padding: 0.3em 0;
+      border-bottom: 1px solid rgba(36, 36, 41, 0.4);
+      line-height: 1.2;
+      transition: color 0.2s ease;
+    }
+    .mobile-nav-link:last-child  { border-bottom: none; }
+    .mobile-nav-link:hover       { color: #e2ddd5; }
+
+    /* ================================================================
+       HERO SECTION
+       Full-viewport typographic opening. Ghost watermark behind text.
+       No background image — the typography IS the hero.
+    ================================================================ */
+    #hero {
+      min-height: 100dvh;
+      padding-top: var(--nav-h);
+      padding-left:  var(--page-gutter);
+      padding-right: var(--page-gutter);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Ghost watermark — purely decorative atmosphere */
+    .hero-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(8rem, 24vw, 24rem);
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      color: transparent;
+      /* Painted as a stroke, not a fill — more ghost-like */
+      -webkit-text-stroke: 1px rgba(200, 169, 110, 0.055);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1;
+    }
+
+    /* ── Hero Gold Rule ─────────────────────────────────────── */
+    /* Thin accent line — animates in via GSAP scaleX           */
+    .hero-rule {
+      width: 52px;
+      height: 1px;
+      background: var(--gold);
+      margin-bottom: 1.6rem;
+      /* GSAP initial state */
+      opacity: 0;
+      transform: scaleX(0);
+      transform-origin: left center;
+    }
+
+    /* ── Hero Eyebrow ───────────────────────────────────────── */
+    .hero-eyebrow {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.75rem;
+      /* GSAP initial state */
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    /* ── Hero Headline ──────────────────────────────────────── */
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3.4rem, 9vw, 9.5rem);
+      font-weight: 400;
+      line-height: 1.0;
+      letter-spacing: -0.025em;
+      color: #e2ddd5;
+    }
+
+    /* Each .hero-line is a clip window; .hero-line-inner slides up inside it */
+    .hero-line         { display: block; overflow: hidden; }
+    .hero-line-inner   { display: block; /* GSAP animates y from 110% to 0 */ }
+    .hero-title em     { font-style: italic; color: var(--gold); }
+
+    /* ── Hero Tagline ───────────────────────────────────────── */
+    .hero-tagline {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(0.84rem, 1.4vw, 0.98rem);
+      font-weight: 300;
+      color: #6b6867;
+      line-height: 1.75;
+      max-width: 46ch;
+      margin-top: 2.5rem;
+      /* GSAP initial */
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    /* ── Hero CTA Group ─────────────────────────────────────── */
+    .hero-cta-group {
+      margin-top: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 2.25rem;
+      /* GSAP initial */
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    /* Primary filled button */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: #08080b;
+      background: var(--gold);
+      padding: 0.875rem 2.1rem;
+      border-radius: 2px;
+      transition:
+        background   0.3s ease,
+        transform    0.35s var(--ease-expo),
+        box-shadow   0.35s ease;
+    }
+    .btn-primary:hover {
+      background: #dbbf85;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 36px rgba(200, 169, 110, 0.22);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Ghost text button */
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: #6b6867;
+      transition: color 0.25s ease;
+    }
+    .btn-ghost:hover          { color: #e2ddd5; }
+    .btn-ghost svg            { transition: transform 0.35s var(--ease-expo); }
+    .btn-ghost:hover svg      { transform: translateX(5px); }
+
+    /* ── Scroll Indicator ───────────────────────────────────── */
+    .hero-scroll {
+      position: absolute;
+      bottom: 2.5rem;
+      left: var(--page-gutter);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      /* GSAP initial */
+      opacity: 0;
+    }
+    .hero-scroll__line {
+      width: 44px;
+      height: 1px;
+      background: #242429;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Running gold shimmer */
+    .hero-scroll__line::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--gold);
+      transform: translateX(-100%);
+      animation: shimmer-line 2.4s ease-in-out infinite;
+      animation-delay: 1.8s;
+    }
+    @keyframes shimmer-line {
+      0%   { transform: translateX(-100%); }
+      50%  { transform: translateX(0);    }
+      100% { transform: translateX(100%); }
+    }
+    .hero-scroll__label {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #3a3835;
+    }
+
+    /* Count badge (top-right of hero) */
+    .hero-stat {
+      position: absolute;
+      top: calc(var(--nav-h) + 2.5rem);
+      right: var(--page-gutter);
+      text-align: right;
+      opacity: 0;          /* GSAP initial */
+    }
+    .hero-stat__number {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 400;
+      color: rgba(200, 169, 110, 0.18);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .hero-stat__label {
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #3a3835;
+      margin-top: 0.25rem;
+    }
+
+    /* ================================================================
+       GALLERY SECTION
+    ================================================================ */
+    #gallery {
+      padding: 5.5rem var(--page-gutter) 4rem;
+    }
+
+    /* ── Gallery Header ─────────────────────────────────────── */
+    .gallery-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #242429;
+    }
+    .gallery-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      color: #e2ddd5;
+    }
+    .gallery-title em { font-style: italic; color: var(--gold); }
+    .gallery-meta {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .gallery-count {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #3a3835;
+    }
+
+    /* ── Masonry Grid (pure CSS columns) ───────────────────── */
+    /* The browser handles stacking height automatically.       */
+    /* column-gap and margin-bottom on cards = gutters.        */
+    .masonry-grid {
+      columns: 3;
+      column-gap: 1.1rem;
+    }
+    @media (max-width: 1100px) { .masonry-grid { columns: 2; } }
+    @media (max-width:  580px) { .masonry-grid { columns: 1; } }
+
+    /* ── Wallpaper Card ─────────────────────────────────────── */
+    /* The single atomic unit. Replicate this in the Jinja loop. */
+    .aura-card {
+      break-inside: avoid;            /* never split across columns */
+      margin-bottom: 1.1rem;
+      position: relative;
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      border: 1px solid rgba(36, 36, 41, 0.8);
+      cursor: pointer;
+      /* GSAP sets cards invisible before cascade-in animation */
+      opacity: 0;
+      transform: translateY(42px);
+      /* Hover transition — custom bezier for butter-smooth feel */
+      transition:
+        transform    0.7s  cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        border-color 0.45s ease,
+        box-shadow   0.55s ease;
+      /* GPU layer hint — only where it matters */
+      will-change: transform;
+    }
+    .aura-card:hover {
+      transform: scale(1.017) translateY(-4px);
+      border-color: rgba(200, 169, 110, 0.22);
+      box-shadow:
+        0 22px 64px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(200, 169, 110, 0.07);
+    }
+
+    /* Card image */
+    .aura-card__img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .aura-card:hover .aura-card__img { transform: scale(1.045); }
+
+    /* ── Dark gradient overlay ──────────────────────────────── */
+    /* Sits absolutely over the image. Fades in on hover.       */
+    .aura-card__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(5, 5, 8, 0.96) 0%,
+        rgba(5, 5, 8, 0.52) 42%,
+        rgba(5, 5, 8, 0.1)  68%,
+        transparent         100%
+      );
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1.5rem;
+      opacity: 0;
+      transition: opacity 0.42s ease;
+    }
+    .aura-card:hover .aura-card__overlay { opacity: 1; }
+
+    /* ── Card Metadata ──────────────────────────────────────── */
+    .aura-card__category {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.61rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .aura-card__title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(0.95rem, 1.6vw, 1.18rem);
+      font-weight: 400;
+      color: #e2ddd5;
+      line-height: 1.3;
+      margin-bottom: 1.1rem;
+    }
+
+    /* ── Download Button ────────────────────────────────────── */
+    .aura-card__download {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.63rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: #e2ddd5;
+      /* Transparent by default, gold-bordered */
+      background: transparent;
+      border: 1px solid rgba(200, 169, 110, 0.32);
+      padding: 0.52rem 1.1rem;
+      border-radius: 2px;
+      align-self: flex-start;
+      transition:
+        background    0.28s ease,
+        border-color  0.28s ease,
+        color         0.28s ease,
+        transform     0.28s var(--ease-expo);
+    }
+    .aura-card__download:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #08080b;
+      transform: translateY(-1px);
+    }
+    .aura-card__download:active { transform: translateY(0); }
+
+    /* ── Card Number Badge (optional decorative touch) ──────── */
+    .aura-card__number {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.58rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: rgba(200, 169, 110, 0.55);
+      background: rgba(8, 8, 11, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 0.2rem 0.5rem;
+      border-radius: 2px;
+      border: 1px solid rgba(200, 169, 110, 0.12);
+    }
+
+    /* ================================================================
+       FOOTER
+    ================================================================ */
+    #footer {
+      border-top: 1px solid #242429;
+      padding: 3.5rem var(--page-gutter) 2.5rem;
+      margin-top: 2rem;
+    }
+    .footer-bottom {
+      margin-top: 2.5rem;
+      padding-top: 1.75rem;
+      border-top: 1px solid rgba(36, 36, 41, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    /* ================================================================
+       UTILITIES
+    ================================================================ */
+    /* Section entry animation class (added by ScrollTrigger) */
+    .is-visible {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    /* ── Reduced Motion ─────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration:    0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration:   0.01ms !important;
+      }
+      .aura-card {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      #aura-nav {
+        transform: none !important;
+        opacity: 1 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================================================================
+       NAVIGATION
+       Fixed glassmorphism header. GSAP slides it in on load.
+  ================================================================ -->
+  <header id="aura-nav" role="banner" aria-label="Site header">
+    <div class="h-full max-w-[1680px] mx-auto px-6 flex items-center justify-between gap-8">
+
+      <!-- Logo ──────────────────────────────────────────────── -->
+      <a href="/" class="flex items-baseline gap-0.5 no-underline group shrink-0" aria-label="Aura — home">
+        <span class="font-display text-[1.2rem] font-medium tracking-[-0.02em] text-aura-text transition-colors duration-300">Aura</span>
+        <!-- The gold dot is the signature mark of the brand -->
+        <span
+          class="text-aura-gold text-[1.3rem] leading-none select-none transition-transform duration-500 group-hover:rotate-[20deg] inline-block"
+          aria-hidden="true"
+        >·</span>
+      </a>
+
+      <!-- Desktop Category Links ─────────────────────────────── -->
+      <nav class="hidden md:flex items-center gap-7" aria-label="Category navigation">
+        <a href="#gallery" class="nav-link is-active">Discover</a>
+        <a href="#"        class="nav-link">Automotive</a>
+        <a href="#"        class="nav-link">Nature</a>
+        <a href="#"        class="nav-link">Space</a>
+        <a href="#"        class="nav-link">Anime</a>
+      </nav>
+
+      <!-- Right Actions ─────────────────────────────────────── -->
+      <div class="flex items-center gap-5 shrink-0">
+
+        <!-- Sign In (desktop only) -->
+        <a href="#" class="nav-link hidden md:block">Sign in</a>
+
+        <!-- Upload CTA (desktop only) — subtle ghost pill -->
+        <a
+          href="#"
+          class="hidden md:inline-flex items-center gap-1.5 text-[0.65rem] font-medium tracking-[0.1em] uppercase text-aura-muted
+                 border border-aura-border rounded-sm px-4 py-2 transition-all duration-300
+                 hover:text-aura-text hover:border-aura-faint"
+        >
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M6 9V2M3 5l3-3 3 3M1 11h10"/>
+          </svg>
+          Submit
+        </a>
+
+        <!-- Hamburger — mobile only ─────────────────────────── -->
+        <button
+          id="hamburger-btn"
+          class="hamburger md:hidden"
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+          type="button"
+        >
+          <span class="hamburger__bar"></span>
+          <span class="hamburger__bar"></span>
+          <span class="hamburger__bar"></span>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================================================================
+       MOBILE FULLSCREEN MENU
+       Slides in from the right. Closed by default. ARIA-managed.
+  ================================================================ -->
+  <div
+    id="mobile-menu"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Navigation"
+    aria-hidden="true"
+  >
+    <!-- Close button (top-right) -->
+    <button
+      id="mobile-close-btn"
+      type="button"
+      aria-label="Close navigation menu"
+      class="absolute top-6 right-6 text-aura-muted hover:text-aura-text transition-colors duration-200"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <!-- Menu category links -->
+    <nav class="flex flex-col gap-0" aria-label="Mobile category navigation">
+      <a href="#gallery" class="mobile-nav-link" data-close-menu>Discover</a>
+      <a href="#"        class="mobile-nav-link" data-close-menu>Automotive</a>
+      <a href="#"        class="mobile-nav-link" data-close-menu>Nature</a>
+      <a href="#"        class="mobile-nav-link" data-close-menu>Space</a>
+      <a href="#"        class="mobile-nav-link" data-close-menu>Anime</a>
+    </nav>
+
+    <!-- Secondary mobile links -->
+    <div class="mt-8 flex items-center gap-5">
+      <a href="#" class="text-[0.7rem] text-aura-faint hover:text-aura-muted tracking-[0.12em] uppercase font-body transition-colors duration-200">Sign in</a>
+      <a href="#" class="text-[0.7rem] text-aura-faint hover:text-aura-muted tracking-[0.12em] uppercase font-body transition-colors duration-200">Submit Work</a>
+    </div>
+
+    <!-- Footer links pinned to bottom -->
+    <div class="absolute bottom-8 left-8 flex items-center gap-5">
+      <a href="#" class="text-[0.6rem] text-aura-faint hover:text-aura-muted tracking-[0.15em] uppercase font-body transition-colors duration-200">Terms</a>
+      <a href="#" class="text-[0.6rem] text-aura-faint hover:text-aura-muted tracking-[0.15em] uppercase font-body transition-colors duration-200">Privacy</a>
+    </div>
+  </div>
+
+
+  <!-- ================================================================
+       HERO SECTION
+       Full viewport typographic statement. No image background —
+       the typography and negative space create the premium feel.
+       Ghost watermark sits behind as a subliminal brand presence.
+  ================================================================ -->
+  <section id="hero" aria-labelledby="hero-heading">
+
+    <!-- Decorative ghost watermark — aria-hidden so screen readers skip it -->
+    <div class="hero-watermark" aria-hidden="true">AURA</div>
+
+    <!-- Stat badge — top right (desktop) -->
+    <div class="hero-stat hidden md:block" aria-label="Collection size">
+      <!--
+        Flask: <span class="hero-stat__number">{{ wallpapers|length }}</span>
+      -->
+      <div class="hero-stat__number">240</div>
+      <div class="hero-stat__label">Wallpapers</div>
+    </div>
+
+    <!-- Gold rule — animates in via GSAP -->
+    <div class="hero-rule" aria-hidden="true"></div>
+
+    <!-- Eyebrow label -->
+    <p class="hero-eyebrow">A Premium Visual Archive</p>
+
+    <!-- Main headline
+         Each .hero-line wraps a .hero-line-inner.
+         The parent has overflow:hidden — GSAP translates the inner
+         from y:110% to y:0, creating a masked curtain-reveal effect.
+    -->
+    <h1 class="hero-title" id="hero-heading">
+      <span class="hero-line"><span class="hero-line-inner">Every screen</span></span>
+      <span class="hero-line"><span class="hero-line-inner">deserves</span></span>
+      <span class="hero-line"><span class="hero-line-inner">an <em>Aura.</em></span></span>
+    </h1>
+
+    <!-- Tagline -->
+    <p class="hero-tagline">
+      Handpicked wallpapers from the world's finest photographers<br class="hidden lg:block" />
+      and digital artists — curated for those who see the difference.
+    </p>
+
+    <!-- CTA group -->
+    <div class="hero-cta-group">
+      <a href="#gallery" class="btn-primary">
+        Explore Gallery
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M2 7h10M8 3l4 4-4 4"/>
+        </svg>
+      </a>
+      <a href="#" class="btn-ghost">
+        Submit your work
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M2 6h8M6 2l4 4-4 4"/>
+        </svg>
+      </a>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="hero-scroll" aria-hidden="true">
+      <div class="hero-scroll__line"></div>
+      <span class="hero-scroll__label">Scroll to explore</span>
+    </div>
+
+  </section>
+
+
+  <!-- ================================================================
+       GALLERY SECTION
+       CSS-column masonry grid. Cards are the atomic Jinja unit.
+       
+       ─────────────────────────────────────────────────────────
+       HOW TO USE WITH FLASK / JINJA2
+       ─────────────────────────────────────────────────────────
+       
+       In your Flask route, pass wallpapers to the template:
+       
+         @app.route('/')
+         def index():
+             wallpapers = db.get_all_wallpapers()  # your query
+             return render_template('aura.html', wallpapers=wallpapers)
+       
+       Each wallpaper object should have:
+         - .id            → unique identifier
+         - .title         → display name
+         - .category      → e.g. 'Nature', 'Space', 'Automotive'
+         - .thumbnail_url → src for the <img> tag
+         - .download_url  → href for the download anchor
+       
+       Replace the static cards below with:
+       
+         {# Update count badge in gallery header too #}
+         <span class="gallery-count">{{ wallpapers|length }} wallpapers</span>
+         
+         {% for wp in wallpapers %}
+         <article class="aura-card" data-index="{{ loop.index }}">
+           <img
+             class="aura-card__img"
+             src="{{ wp.thumbnail_url }}"
+             alt="{{ wp.title }} — {{ wp.category }} wallpaper"
+             loading="lazy"
+             decoding="async"
+           />
+           <span class="aura-card__number">{{ '%02d'|format(loop.index) }}</span>
+           <div class="aura-card__overlay">
+             <span class="aura-card__category">{{ wp.category }}</span>
+             <h2 class="aura-card__title">{{ wp.title }}</h2>
+             <a
+               class="aura-card__download"
+               href="{{ wp.download_url }}"
+               download
+               aria-label="Download {{ wp.title }}"
+             >
+               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8">
+                 <path d="M6 1v7M3 5l3 4 3-4M1 11h10"/>
+               </svg>
+               Download
+             </a>
+           </div>
+         </article>
+         {% endfor %}
+       ─────────────────────────────────────────────────────────
+  ================================================================ -->
+  <section id="gallery" aria-labelledby="gallery-heading">
+
+    <!-- Gallery header row -->
+    <div class="gallery-header">
+      <h2 class="gallery-title" id="gallery-heading">
+        The <em>Collection</em>
+      </h2>
+      <div class="gallery-meta">
+        <!--
+          Flask: {{ wallpapers|length }} Wallpapers
+        -->
+        <span class="gallery-count">12 Wallpapers</span>
+      </div>
+    </div>
+
+    <!-- ── Masonry Grid ──────────────────────────────────────── -->
+    <div class="masonry-grid" role="list" aria-label="Wallpaper gallery">
+
+      <!-- ===========================================================
+           JINJA LOOP: {% for wp in wallpapers %}
+      =========================================================== -->
+
+      <!-- Card 01 ─ Tall Portrait -->
+      <article class="aura-card" role="listitem" data-index="1">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura01/720/980" alt="Nebula Cascade — Space wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">01</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Space</span>
+          <h2 class="aura-card__title">Nebula Cascade</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Nebula Cascade">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 02 ─ Wide Landscape -->
+      <article class="aura-card" role="listitem" data-index="2">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura02/720/460" alt="Chrome Ghost — Automotive wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">02</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Automotive</span>
+          <h2 class="aura-card__title">Chrome Ghost</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Chrome Ghost">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 03 ─ Near Square -->
+      <article class="aura-card" role="listitem" data-index="3">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura03/720/680" alt="Mossy Cathedral — Nature wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">03</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Nature</span>
+          <h2 class="aura-card__title">Mossy Cathedral</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Mossy Cathedral">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 04 ─ Very Tall Portrait -->
+      <article class="aura-card" role="listitem" data-index="4">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura04/720/1060" alt="Solitude Protocol — Anime wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">04</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Anime</span>
+          <h2 class="aura-card__title">Solitude Protocol</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Solitude Protocol">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 05 ─ Landscape -->
+      <article class="aura-card" role="listitem" data-index="5">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura05/720/440" alt="Asphalt Hour — Automotive wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">05</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Automotive</span>
+          <h2 class="aura-card__title">Asphalt Hour</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Asphalt Hour">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 06 ─ Medium Portrait -->
+      <article class="aura-card" role="listitem" data-index="6">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura06/720/840" alt="Crimson Meridian — Space wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">06</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Space</span>
+          <h2 class="aura-card__title">Crimson Meridian</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Crimson Meridian">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 07 ─ Short Landscape -->
+      <article class="aura-card" role="listitem" data-index="7">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura07/720/420" alt="Storm Shelf — Nature wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">07</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Nature</span>
+          <h2 class="aura-card__title">Storm Shelf</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Storm Shelf">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 08 ─ Tall Portrait -->
+      <article class="aura-card" role="listitem" data-index="8">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura08/720/940" alt="Sakura Rain — Anime wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">08</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Anime</span>
+          <h2 class="aura-card__title">Sakura Rain</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Sakura Rain">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 09 ─ Landscape -->
+      <article class="aura-card" role="listitem" data-index="9">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura09/720/490" alt="Vantage Point — Nature wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">09</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Nature</span>
+          <h2 class="aura-card__title">Vantage Point</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Vantage Point">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 10 ─ Medium Tall -->
+      <article class="aura-card" role="listitem" data-index="10">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura10/720/780" alt="Ion Drift — Space wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">10</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Space</span>
+          <h2 class="aura-card__title">Ion Drift</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Ion Drift">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 11 ─ Landscape -->
+      <article class="aura-card" role="listitem" data-index="11">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura11/720/500" alt="Velocity Mark — Automotive wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">11</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Automotive</span>
+          <h2 class="aura-card__title">Velocity Mark</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Velocity Mark">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- Card 12 ─ Very Tall Portrait -->
+      <article class="aura-card" role="listitem" data-index="12">
+        <img class="aura-card__img" src="https://picsum.photos/seed/aura12/720/1000" alt="Ghost Summit — Nature wallpaper" loading="lazy" decoding="async" />
+        <span class="aura-card__number">12</span>
+        <div class="aura-card__overlay">
+          <span class="aura-card__category">Nature</span>
+          <h2 class="aura-card__title">Ghost Summit</h2>
+          <a class="aura-card__download" href="#" download aria-label="Download Ghost Summit">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v7M3 5l3 4 3-4M1 11h10"/></svg>
+            Download
+          </a>
+        </div>
+      </article>
+
+      <!-- ===========================================================
+           JINJA LOOP: {% endfor %}
+      =========================================================== -->
+
+    </div><!-- /masonry-grid -->
+
+  </section><!-- /gallery -->
+
+
+  <!-- ================================================================
+       FOOTER
+       Minimal, two-row editorial layout.
+  ================================================================ -->
+  <footer id="footer" role="contentinfo" aria-label="Site footer">
+
+    <!-- Top row -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+
+      <!-- Left: Wordmark + tagline -->
+      <div class="shrink-0">
+        <div class="flex items-baseline gap-0.5 mb-3">
+          <span class="font-display text-[1.1rem] font-medium tracking-tight text-aura-text">Aura</span>
+          <span class="text-aura-gold text-[1.2rem] leading-none select-none" aria-hidden="true">·</span>
+        </div>
+        <p class="text-[0.72rem] text-aura-faint font-body tracking-wide leading-relaxed max-w-[28ch]">
+          A curated visual archive for screens that deserve something more.
+        </p>
+      </div>
+
+      <!-- Centre: Nav (desktop only) -->
+      <nav class="hidden lg:flex items-center gap-7" aria-label="Footer navigation">
+        <a href="#gallery" class="nav-link">Discover</a>
+        <a href="#"        class="nav-link">Automotive</a>
+        <a href="#"        class="nav-link">Nature</a>
+        <a href="#"        class="nav-link">Space</a>
+        <a href="#"        class="nav-link">Anime</a>
+      </nav>
+
+      <!-- Right: Legal links -->
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="#" class="text-[0.65rem] text-aura-faint hover:text-aura-muted transition-colors duration-200 tracking-[0.14em] uppercase font-body">Terms</a>
+        <a href="#" class="text-[0.65rem] text-aura-faint hover:text-aura-muted transition-colors duration-200 tracking-[0.14em] uppercase font-body">Privacy</a>
+        <a href="#" class="text-[0.65rem] text-aura-faint hover:text-aura-muted transition-colors duration-200 tracking-[0.14em] uppercase font-body">Cookies</a>
+      </div>
+
+    </div>
+
+    <!-- Bottom rule + copyright -->
+    <div class="footer-bottom">
+      <p class="text-[0.67rem] text-aura-faint font-body tracking-wide">
+        © 2026 Aura. All rights reserved.
+      </p>
+      <p class="text-[0.67rem] text-aura-faint font-body tracking-wide hidden md:block">
+        Made with intentional craft.
+      </p>
+    </div>
+
+  </footer>
+
+
+  <!-- ================================================================
+       JAVASCRIPT
+       ─────────────────────────────────────────────────────────────
+       Three responsibilities:
+       1. Mobile menu open/close (vanilla JS, CSS transition)
+       2. GSAP master entrance timeline (load sequence)
+       3. GSAP ScrollTrigger gallery cascade (scroll-driven reveal)
+       ─────────────────────────────────────────────────────────────
+  ================================================================ -->
+  <script>
+    /* ────────────────────────────────────────────────────────────
+       SETUP
+    ──────────────────────────────────────────────────────────── */
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Cache DOM references used in multiple places
+    const nav          = document.getElementById('aura-nav');
+    const mobileMenu   = document.getElementById('mobile-menu');
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const closeBtn     = document.getElementById('mobile-close-btn');
+    const cards        = document.querySelectorAll('.aura-card');
+
+    /* ────────────────────────────────────────────────────────────
+       1. MOBILE MENU
+       ─────────────────────────────────────────────────────────
+       Pure CSS transition handles the slide animation.
+       JS manages class toggling, ARIA attributes, focus trap,
+       and the staggered link entrance via GSAP.
+    ──────────────────────────────────────────────────────────── */
+    function openMobileMenu() {
+      mobileMenu.classList.add('is-open');
+      mobileMenu.setAttribute('aria-hidden', 'false');
+      hamburgerBtn.classList.add('is-open');
+      hamburgerBtn.setAttribute('aria-expanded', 'true');
+      hamburgerBtn.setAttribute('aria-label', 'Close navigation menu');
+      document.body.style.overflow = 'hidden'; // lock background scroll
+
+      // Stagger the link items in after the panel slides (≈ 250ms into transition)
+      gsap.fromTo('.mobile-nav-link',
+        { x: 28, opacity: 0 },
+        { x: 0,  opacity: 1, duration: 0.5, stagger: 0.07, ease: 'power3.out', delay: 0.22 }
+      );
+    }
+
+    function closeMobileMenu() {
+      mobileMenu.classList.remove('is-open');
+      mobileMenu.setAttribute('aria-hidden', 'true');
+      hamburgerBtn.classList.remove('is-open');
+      hamburgerBtn.setAttribute('aria-expanded', 'false');
+      hamburgerBtn.setAttribute('aria-label', 'Open navigation menu');
+      document.body.style.overflow = '';
+    }
+
+    hamburgerBtn.addEventListener('click', () => {
+      mobileMenu.classList.contains('is-open') ? closeMobileMenu() : openMobileMenu();
+    });
+
+    closeBtn.addEventListener('click', closeMobileMenu);
+
+    // Close on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileMenu.classList.contains('is-open')) closeMobileMenu();
+    });
+
+    // Close when a menu link is tapped (data-close-menu attribute)
+    document.querySelectorAll('[data-close-menu]').forEach(link => {
+      link.addEventListener('click', closeMobileMenu);
+    });
+
+
+    /* ────────────────────────────────────────────────────────────
+       2. GSAP — MASTER ENTRANCE TIMELINE
+       ─────────────────────────────────────────────────────────
+       Fires once immediately on page load. Orchestrates:
+         a) Nav slides down from above the viewport
+         b) Gold rule scales in from the left (transform-origin: left)
+         c) Eyebrow fades + rises
+         d) Hero title lines — classic masked curtain reveal
+            (parent overflow:hidden + child translateY 110% → 0)
+         e) Tagline fades + rises
+         f) CTA group fades + rises
+         g) Scroll indicator fades in last
+         h) Stat badge fades in (desktop)
+       
+       All transforms use `transform` and `opacity` only — zero
+       layout-shifting properties — guaranteeing 60fps.
+    ──────────────────────────────────────────────────────────── */
+    const master = gsap.timeline({
+      defaults: { ease: 'power4.out' },
+      delay:    0.08, // brief pause after browser first-paint
+    });
+
+    // ── a) Navigation ─────────────────────────────────────────
+    master.to('#aura-nav', {
+      y:        0,
+      opacity:  1,
+      duration: 1.0,
+      ease:     'power4.out',
+    });
+
+    // ── b) Hero gold rule (scaleX: 0 → 1) ───────────────────
+    master.to('.hero-rule', {
+      opacity:  1,
+      scaleX:   1,
+      duration: 0.7,
+      ease:     'power4.out',
+    }, '-=0.4'); // overlap: starts while nav is still animating
+
+    // ── c) Eyebrow label ─────────────────────────────────────
+    master.to('.hero-eyebrow', {
+      opacity:  1,
+      y:        0,
+      duration: 0.65,
+    }, '-=0.3');
+
+    // ── d) Hero title — curtain / masked slide-up reveal ─────
+    // `.hero-line` has overflow:hidden. The inner element slides
+    // up from 110% to 0, appearing to emerge from behind a mask.
+    // Stagger: each line enters 0.13s after the previous.
+    master.from('.hero-line-inner', {
+      y:        '112%',
+      opacity:  0,
+      duration: 1.15,
+      stagger:  0.13,
+      ease:     'power4.out',
+    }, '-=0.25');
+
+    // ── e) Tagline ───────────────────────────────────────────
+    master.to('.hero-tagline', {
+      opacity:  1,
+      y:        0,
+      duration: 0.85,
+      ease:     'power3.out',
+    }, '-=0.6');
+
+    // ── f) CTA buttons ───────────────────────────────────────
+    master.to('.hero-cta-group', {
+      opacity:  1,
+      y:        0,
+      duration: 0.75,
+      ease:     'power3.out',
+    }, '-=0.6');
+
+    // ── g) Scroll indicator ──────────────────────────────────
+    master.to('.hero-scroll', {
+      opacity:  1,
+      duration: 0.6,
+      ease:     'power2.out',
+    }, '-=0.4');
+
+    // ── h) Stat badge (desktop) ──────────────────────────────
+    master.to('.hero-stat', {
+      opacity:  1,
+      duration: 0.6,
+      ease:     'power2.out',
+    }, '<'); // same moment as scroll indicator
+
+
+    /* ────────────────────────────────────────────────────────────
+       3. GSAP — GALLERY HEADER REVEAL (ScrollTrigger)
+       Simple fade+rise as the section enters the viewport.
+    ──────────────────────────────────────────────────────────── */
+    gsap.from('.gallery-header', {
+      opacity:  0,
+      y:        24,
+      duration: 0.9,
+      ease:     'power3.out',
+      scrollTrigger: {
+        trigger: '#gallery',
+        start:   'top 88%',
+        once:    true, // only animate in once
+      },
+    });
+
+
+    /* ────────────────────────────────────────────────────────────
+       4. GSAP — MASONRY CARD CASCADE (ScrollTrigger.batch)
+       ─────────────────────────────────────────────────────────
+       ScrollTrigger.batch groups cards that enter the viewport
+       together into a single animation batch, producing the
+       natural "waterfall cascade" effect as the user scrolls.
+       
+       Cards are initially at: opacity:0, translateY:42px  (CSS)
+       They animate to:        opacity:1, translateY:0
+       
+       onLeaveBack reverses the animation when scrolling back up,
+       allowing cards to cascade back in again on re-scroll.
+    ──────────────────────────────────────────────────────────── */
+    ScrollTrigger.batch('.aura-card', {
+      // Fire when the top of a card hits 92% down the viewport
+      start:     'top 92%',
+      // Maximum time between cards to group them into one batch
+      batchMax:  6,
+
+      onEnter: (batch) => {
+        gsap.to(batch, {
+          opacity:   1,
+          y:         0,
+          duration:  0.9,
+          stagger:   0.08,          // 80ms between each card in the batch
+          ease:      'power3.out',
+          overwrite: true,
+        });
+      },
+
+      // Scroll back up → cards fade back down, ready to re-enter
+      onLeaveBack: (batch) => {
+        gsap.to(batch, {
+          opacity:   0,
+          y:         42,
+          duration:  0.45,
+          stagger:   0.04,
+          ease:      'power2.in',
+          overwrite: true,
+        });
+      },
+    });
+
+
+    /* ────────────────────────────────────────────────────────────
+       5. NAV SCROLL SHADOW + ACTIVE STATE
+       ─────────────────────────────────────────────────────────
+       Adds .is-scrolled (CSS box-shadow) when page is scrolled.
+       Uses passive listener for zero jank.
+    ──────────────────────────────────────────────────────────── */
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('is-scrolled', window.scrollY > 30);
+    }, { passive: true });
+
+
+    /* ────────────────────────────────────────────────────────────
+       6. SMOOTH SCROLL FOR ANCHOR LINKS
+       ─────────────────────────────────────────────────────────
+       Native scroll-behavior:smooth on <html> handles most cases,
+       but we augment with offset compensation for the fixed nav.
+    ──────────────────────────────────────────────────────────── */
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        const href   = anchor.getAttribute('href');
+        if (href === '#') return;
+        const target = document.querySelector(href);
+        if (!target) return;
+
+        e.preventDefault();
+
+        // Offset by nav height so the section isn't hidden under the bar
+        const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
+        const targetTop = target.getBoundingClientRect().top + window.scrollY - navHeight;
+
+        window.scrollTo({ top: targetTop, behavior: 'smooth' });
+
+        // Close mobile menu if it was open
+        if (mobileMenu.classList.contains('is-open')) closeMobileMenu();
+      });
+    });
+  </script>
+
+</body>
+</html>

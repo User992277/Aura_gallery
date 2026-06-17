@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preparing Download | Aura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        midnight: { 900: '#0a0a0c', 800: '#121316', 700: '#1a1c23' },
+                        accent: { neon: '#00FFAA' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-midnight-900 text-white min-h-screen flex flex-col items-center justify-center font-sans">
+
+    <div class="max-w-lg w-full p-8 bg-midnight-800 rounded-2xl border border-midnight-700 text-center shadow-2xl transition-all duration-500">
+        
+        {% if is_locked %}
+            <!-- STATE 3: THE FREEMIUM WALL -->
+            <div class="py-6">
+                <div class="w-16 h-16 bg-midnight-700 rounded-full flex items-center justify-center mx-auto mb-4 border border-accent-neon/50">
+                    <svg class="w-8 h-8 text-accent-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                </div>
+                <h2 class="text-2xl font-serif mb-3 text-white">Guest Limit Reached</h2>
+                <p class="text-gray-400 text-sm mb-8">You've reached the maximum number of anonymous downloads. Create a free Aura account to unlock unlimited high-res downloads forever.</p>
+                
+                <!-- This will eventually link to your login/signup page -->
+                <button onclick="alert('Signup page coming soon!')" class="w-full py-3 bg-accent-neon text-black font-bold rounded-lg hover:bg-white transition-colors shadow-[0_0_15px_rgba(0,255,170,0.2)]">
+                    Create Free Account
+                </button>
+                <a href="/" class="block mt-4 text-sm text-gray-500 hover:text-white transition-colors">Return to Gallery</a>
+            </div>
+
+        {% else %}
+            <!-- STATES 1 & 2: THE SECURE DOWNLOADER -->
+            <h2 class="text-2xl font-serif mb-2">Preparing your high-res file</h2>
+            <p class="text-gray-400 text-sm mb-8">{{ status_message }}</p>
+            
+            <!-- ADVERTISEMENT PLACEHOLDER -->
+            <div class="w-full h-48 bg-midnight-700 rounded-lg border border-gray-700/50 flex flex-col items-center justify-center mb-8">
+                <span class="text-xs text-gray-500 uppercase tracking-widest mb-2">Advertisement</span>
+                <p class="text-gray-400 italic font-serif">Support the artists.</p>
+            </div>
+
+            <!-- THE DYNAMIC TIMER -->
+            <div id="timer-container">
+                <p class="text-lg">Your secure link will be ready in <span id="countdown" class="text-accent-neon font-bold text-xl">{{ timer_length }}</span> seconds</p>
+            </div>
+
+            <div id="download-container" class="hidden">
+                <button onclick="triggerDownload('{{ wallpaper.image_url }}', '{{ wallpaper.title }}')" class="w-full py-3 bg-accent-neon text-black font-bold rounded-lg hover:bg-white transition-colors shadow-[0_0_15px_rgba(0,255,170,0.2)]">
+                    Download Original File
+                </button>
+            </div>
+            
+            <script>
+                // Use the timer length passed from Flask
+                let timeLeft = {{ timer_length }};
+                const countdownEl = document.getElementById('countdown');
+                const timerContainer = document.getElementById('timer-container');
+                const downloadContainer = document.getElementById('download-container');
+
+                const timer = setInterval(() => {
+                    timeLeft--;
+                    countdownEl.innerText = timeLeft;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        timerContainer.classList.add('hidden');
+                        downloadContainer.classList.remove('hidden');
+                    }
+                }, 1000);
+
+                async function triggerDownload(url, title) {
+                    try {
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = blobUrl;
+                        a.download = `Aura_${title.replace(/\s+/g, '_')}.jpg`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(blobUrl);
+                    } catch (err) {
+                        alert("Download failed. Please try again.");
+                    }
+                }
+            </script>
+        {% endif %}
+    </div>
+</body>
+</html>
