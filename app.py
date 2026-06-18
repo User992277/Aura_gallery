@@ -1,13 +1,12 @@
+import os
 from flask import Flask, render_template, session, request
 from models import db, Wallpaper
-import os
 
 app = Flask(__name__)
 
 # --- CONFIGURATION & DATABASE SETUP ---
 
 # The Secret Key protects the user session data.
-# It tries to find a secure key on Render, but falls back to this local key if not found.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'aura_super_secret_key_2026')
 
 # SMART DATABASE SWITCHING:
@@ -25,6 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 
+# --- APPLICATION ROUTES ---
+
 # Route 1: The Home Page (Shows everything)
 @app.route('/')
 def home():
@@ -38,19 +39,18 @@ def category_view(category_name):
     filtered_wallpapers = Wallpaper.query.filter_by(category=clean_name).all()
     return render_template('index.html', wallpapers=filtered_wallpapers, current_category=clean_name)
 
-# NEW Route 4: The Search Engine
+# Route 3: The Search Engine
 @app.route('/search')
 def search():
     # Grab the 'q' parameter from the URL (e.g., /search?q=porsche)
     query = request.args.get('q', '').strip()
     
     if query:
-        # Search for the query in BOTH the title and the category using 'ilike' (case-insensitive)
+        # Search for the query in BOTH the title and the category
         search_term = f"%{query}%"
         filtered_wallpapers = Wallpaper.query.filter(
             (Wallpaper.title.ilike(search_term)) | (Wallpaper.category.ilike(search_term))
         ).all()
-        # Update the UI to show they are looking at search results
         display_category = f"Search: {query}"
     else:
         # If they search an empty string, just show everything
@@ -59,7 +59,7 @@ def search():
         
     return render_template('index.html', wallpapers=filtered_wallpapers, current_category=display_category)
 
-# Route 3: The Dynamic Monetization Gateway
+# Route 4: The Dynamic Monetization Gateway
 @app.route('/download/<int:wallpaper_id>')
 def download_gateway(wallpaper_id):
     requested_wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
@@ -76,8 +76,10 @@ def download_gateway(wallpaper_id):
     status_message = f"Generating a secure download link for '{requested_wallpaper.title}'..."
     
     if count > 10:
+        # Hard limit reached
         is_locked = True
     elif count > 5:
+        # Gentle Slowdown
         timer_length = 15
         status_message = "Wow, you love our art! To keep servers fast for everyone, your secure link will be ready in 15 seconds."
         
