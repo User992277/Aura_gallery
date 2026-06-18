@@ -3,17 +3,27 @@ from models import db, Wallpaper
 import os
 
 app = Flask(__name__)
-# The Secret Key protects the user session data
-app.config['SECRET_KEY'] = 'aura_super_secret_key_2026' 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wallpapers.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# --- CONFIGURATION & DATABASE SETUP ---
+
+# The Secret Key protects the user session data.
+# It tries to find a secure key on Render, but falls back to this local key if not found.
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'aura_super_secret_key_2026')
+
+# SMART DATABASE SWITCHING:
+# If Render provides a DATABASE_URL, use it (PostgreSQL). Otherwise, use local SQLite.
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///wallpapers.db')
+
+# SQLAlchemy requires 'postgresql://' but Render provides 'postgres://', so we fix it here:
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize the database with the app
 db.init_app(app)
+
 
 # Route 1: The Home Page (Shows everything)
 @app.route('/')
