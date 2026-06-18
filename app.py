@@ -5,8 +5,15 @@ import os
 app = Flask(__name__)
 # The Secret Key protects the user session data
 app.config['SECRET_KEY'] = 'aura_super_secret_key_2026' 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///wallpapers.db'
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///wallpapers.db')
+
+# SQLAlchemy requires 'postgresql://' but Render provides 'postgres://', so we fix it here:
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 
 db.init_app(app)
 
