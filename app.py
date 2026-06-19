@@ -1,6 +1,9 @@
 import os
-from flask import Flask, render_template, session, request
-from models import db, Wallpaper
+from flask import Flask, render_template, session, request, redirect, url_for, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from models import db, Wallpaper, User, AnonymousTracker
+
 
 app = Flask(__name__)
 
@@ -22,6 +25,17 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database with the app
 db.init_app(app)
+
+# --- AUTHENTICATION SETUP ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+# If a user tries to access a locked route, send them to the login page
+login_manager.login_view = 'login' 
+
+# This function teaches Flask-Login how to find a user in the database
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 # --- APPLICATION ROUTES ---
@@ -90,6 +104,53 @@ def download_gateway(wallpaper_id):
         is_locked=is_locked,
         status_message=status_message
     )
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    # If they submit the form
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Security Check: Does this email already exist?
+        user = User.query.filter_by(email=email).first()
+        if user:
+            flash('Email address already exists. Please log in.', 'error')
+            return redirect(url_for('register'))
+            
+        # Hash the password (PBKDF2 SHA256 is an industry standard)
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        
+        # Create the user and save to PostgreSQL
+        new_user = User(email=email, password_hash=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Log them in automatically
+        login_user(new_user)
+        return redirect(url_for('home'))
+        
+    # If they are just visiting the page, show the form
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        # Check if user exists AND password is correct
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+            return redirect(url_for('home'))
+        else:
+            flash('Please check your login details and try again.', 'error')
+            return redirect(url_for('login'))
+            
+    return render_template('login.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
