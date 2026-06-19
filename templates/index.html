@@ -46,12 +46,11 @@
     <!-- NAVIGATION -->
     <nav class="fixed w-full top-0 z-40 bg-midnight-900/80 backdrop-blur-md border-b border-midnight-700/50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center stagger-nav">
-            <a href="/" class="text-xl font-serif font-semibold tracking-wide flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-accent-neon"></div>
-                Aura.
+            
+            <a href="{{ url_for('home') }}" class="text-2xl font-serif font-bold tracking-widest text-white hover:text-gray-300 transition-colors">
+                AURA
             </a>
             
-            <!-- Desktop Links -->
             <div class="hidden md:flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-gray-400 max-w-2xl justify-center">
                 <a href="/" class="{% if current_category == 'Discover' %}text-white{% else %}hover:text-white{% endif %} transition-colors">Discover</a>
                 <a href="/category/cars" class="{% if current_category == 'Cars' %}text-white{% else %}hover:text-white{% endif %} transition-colors">Automotive</a>
@@ -64,9 +63,8 @@
                 <a href="/category/fluid" class="{% if current_category == 'Fluid' %}text-white{% else %}hover:text-white{% endif %} transition-colors">Fluid</a>
             </div>
 
-            <!-- Search, Profile & Mobile Button -->
             <div class="flex items-center space-x-5">
-                <!-- DESKTOP SEARCH BAR -->
+                
                 <form action="/search" method="GET" class="hidden lg:flex relative">
                     <input type="text" name="q" placeholder="Search..." required class="bg-midnight-800 border border-midnight-700 text-sm text-white rounded-full py-1.5 pl-4 pr-10 focus:outline-none focus:border-accent-neon transition-colors w-48">
                     <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-accent-neon transition-colors">
@@ -74,9 +72,22 @@
                     </button>
                 </form>
 
-                <div class="hidden md:flex w-8 h-8 rounded-full bg-midnight-700 border border-midnight-700 items-center justify-center cursor-pointer hover:border-accent-neon transition-colors">
-                    <span class="text-xs text-white">M</span>
-                </div>
+                {% if current_user.is_authenticated %}
+                    <div class="hidden md:flex items-center space-x-4">
+                        <div class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-sm text-gray-300 flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            <span>{{ current_user.email.split('@')[0] }}</span>
+                        </div>
+                        <a href="{{ url_for('logout') }}" class="text-sm text-gray-400 hover:text-white transition-colors duration-300">Log Out</a>
+                    </div>
+                {% else %}
+                    <div class="hidden md:flex items-center space-x-4">
+                        <a href="{{ url_for('login') }}" class="text-sm text-gray-300 hover:text-white transition-colors duration-300">Sign In</a>
+                        <a href="{{ url_for('register') }}" class="px-4 py-2 bg-white text-black hover:bg-gray-200 rounded-full text-sm font-bold tracking-wide transition-all duration-300 transform hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                            Sign Up
+                        </a>
+                    </div>
+                {% endif %}
                 
                 <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none z-50 relative">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
