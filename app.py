@@ -3,6 +3,8 @@ from flask import Flask, render_template, session, request, redirect, url_for, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, Wallpaper, User, AnonymousTracker
+import secrets
+from authlib.integrations.flask_client import OAuth
 
 
 app = Flask(__name__)
@@ -31,6 +33,16 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 # If a user tries to access a locked route, send them to the login page
 login_manager.login_view = 'login' 
+
+# --- OAUTH SETUP (GOOGLE) ---
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
 
 # This function teaches Flask-Login how to find a user in the database
 @login_manager.user_loader
@@ -150,6 +162,43 @@ def login():
             return redirect(url_for('login'))
             
     return render_template('login.html')
+
+# Route: Redirects to Google's consent screen
+@app.route('/login/google')
+def google_login():
+    redirect_uri = url_for('google_auth', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+# Route: The Callback (Where Google sends them back)
+@app.route('/auth/callback')
+def google_auth():
+    # 1. Grab the secure token Google just gave us
+    token = google.authorize_access_token()
+    user_info = token.get('userinfo')
+    
+    if not user_info:
+        flash('Google login failed. Please try again.', 'error')
+        return redirect(url_for('login'))
+        
+    email = user_info.get('email')
+    
+    # 2. Check if this email is already in our database
+    user = User.query.filter_by(email=email).first()
+    
+    # 3. If they don't exist, create an account for them instantly!
+    if not user:
+        # Generate a random 32-character password since they use Google to log in
+        random_pass = secrets.token_hex(16)
+        hashed_pass = generate_password_hash(random_pass, method='pbkdf2:sha256')
+        
+        new_user = User(email=email, password_hash=hashed_pass)
+        db.session.add(new_user)
+        db.session.commit()
+        user = new_user # Switch our reference to the newly created user
+        
+    # 4. Log them in and send them to the gallery
+    login_user(user)
+    return redirect(url_for('home'))
 
 # Route: Secure Logout
 @app.route('/logout')
