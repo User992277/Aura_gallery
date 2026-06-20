@@ -101,7 +101,7 @@ def download_wallpaper(wallpaper_id):
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
 
         # If they hit the limit, block them immediately
-        if tracker and tracker.downloads >= 10:
+        if tracker and tracker.download_count >= 10:
             return redirect(url_for('register', limit_reached=True))
 
     # 2. If they pass the check (or are premium), show them the ad/timer page
