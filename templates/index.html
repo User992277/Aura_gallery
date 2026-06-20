@@ -97,15 +97,20 @@
     </nav>
 
     <!-- THE MOBILE MENU OVERLAY -->
-    <div id="mobile-menu" class="fixed inset-0 bg-midnight-900 z-40 flex flex-col items-center justify-start pt-24 space-y-6 opacity-0 pointer-events-none overflow-y-auto pb-10">
-        
-        <!-- MOBILE SEARCH BAR -->
-        <form action="/search" method="GET" class="w-3/4 relative mb-4">
-            <input type="text" name="q" placeholder="Search wallpapers..." required class="w-full bg-midnight-800 border border-midnight-700 text-lg text-white rounded-full py-3 pl-6 pr-12 focus:outline-none focus:border-accent-neon transition-colors">
-            <button type="submit" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-accent-neon transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </button>
-        </form>
+    <div class="flex flex-col items-center space-y-4 w-3/4 border-b border-midnight-700/50 pb-6 mb-2">
+            {% if current_user.is_authenticated %}
+                <div class="px-5 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-gray-300 flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span>{{ current_user.email.split('@')[0] }}</span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="text-lg font-serif text-gray-400 hover:text-white transition-colors">Log Out</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="text-lg font-serif text-gray-300 hover:text-white transition-colors">Sign In</a>
+                <a href="{{ url_for('register') }}" class="w-full text-center py-3.5 bg-white text-black hover:bg-gray-200 rounded-xl text-lg font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                    Create Account
+                </a>
+            {% endif %}
+        </div>
 
         <a href="/" class="text-2xl font-serif {% if current_category == 'Discover' %}text-white{% else %}text-gray-400 hover:text-white{% endif %} transition-colors">Discover</a>
         <a href="/category/cars" class="text-2xl font-serif {% if current_category == 'Cars' %}text-white{% else %}text-gray-400 hover:text-white{% endif %} transition-colors">Automotive</a>
