@@ -85,37 +85,42 @@ def search():
         
     return render_template('index.html', wallpapers=filtered_wallpapers, current_category=display_category)
 
-# Route 4: The Dynamic Monetization Gateway
+# Route: Secure Download & IP Tracking
 @app.route('/download/<int:wallpaper_id>')
-def download_gateway(wallpaper_id):
-    requested_wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
+def download_wallpaper(wallpaper_id):
+    wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
     
-    # Track their downloads in this session
-    if 'download_count' not in session:
-        session['download_count'] = 0
-        
-    session['download_count'] += 1
-    count = session['download_count']
+    # 1. If they are a logged-in premium user, bypass the bouncer entirely
+    if current_user.is_authenticated:
+        wallpaper.downloads += 1
+        db.session.commit()
+        return redirect(wallpaper.image_url)
+
+    # 2. Extract the true IP Address (handling Render's proxy)
+    if request.headers.getlist("X-Forwarded-For"):
+        user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+    else:
+        user_ip = request.remote_addr
+
+    # 3. Check the PostgreSQL Vault for this IP
+    tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
+
+    # 4. If this is their first time, create a record
+    if not tracker:
+        tracker = AnonymousTracker(ip_address=user_ip, downloads_count=0)
+        db.session.add(tracker)
     
-    is_locked = False
-    timer_length = 5
-    status_message = f"Generating a secure download link for '{requested_wallpaper.title}'..."
+    # 5. THE BOUNCER: Check the limit
+    if tracker.downloads_count >= 10:
+        # Limit reached! Send them to the gateway
+        return redirect(url_for('register', limit_reached=True))
+
+    # 6. Allow the download and log it
+    tracker.downloads_count += 1
+    wallpaper.downloads += 1
+    db.session.commit()
     
-    if count > 10:
-        # Hard limit reached
-        is_locked = True
-    elif count > 5:
-        # Gentle Slowdown
-        timer_length = 15
-        status_message = "Wow, you love our art! To keep servers fast for everyone, your secure link will be ready in 15 seconds."
-        
-    return render_template(
-        'gateway.html', 
-        wallpaper=requested_wallpaper, 
-        timer_length=timer_length,
-        is_locked=is_locked,
-        status_message=status_message
-    )
+    return redirect(wallpaper.image_url)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
