@@ -107,16 +107,16 @@ def download_wallpaper(wallpaper_id):
 
     # 4. If this is their first time, create a record
     if not tracker:
-        tracker = AnonymousTracker(ip_address=user_ip, downloads_count=0)
+        tracker = AnonymousTracker(ip_address=user_ip, download_count=0)
         db.session.add(tracker)
     
     # 5. THE BOUNCER: Check the limit
-    if tracker.downloads_count >= 10:
+    if tracker.download_count >= 10:
         # Limit reached! Send them to the gateway
         return redirect(url_for('register', limit_reached=True))
 
     # 6. Allow the download and log it
-    tracker.downloads_count += 1
+    tracker.download_count += 1
     wallpaper.downloads += 1
     db.session.commit()
     
