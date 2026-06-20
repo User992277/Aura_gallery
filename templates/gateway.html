@@ -61,11 +61,14 @@
             </div>
             
             <script>
-                // Use the timer length passed from Flask
-                let timeLeft = { timer_length };
+        
+                // Correct Jinja2 syntax to pass the variable to JS
+                let timeLeft = {{ timer_length }};
                 const countdownEl = document.getElementById('countdown');
                 const timerContainer = document.getElementById('timer-container');
                 const downloadContainer = document.getElementById('download-container');
+                // ... rest of your script
+            </script>
 
                 const timer = setInterval(() => {
                     timeLeft--;
