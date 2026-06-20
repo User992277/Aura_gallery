@@ -55,9 +55,9 @@
             </div>
 
             <div id="download-container" class="hidden">
-                <button onclick="triggerDownload('{{ wallpaper.image_url }}', '{{ wallpaper.title }}')" class="w-full py-3 bg-accent-neon text-black font-bold rounded-lg hover:bg-white transition-colors shadow-[0_0_15px_rgba(0,255,170,0.2)]">
+                <a href="/serve/{{ wallpaper.id }}" class="block w-full text-center py-3 bg-accent-neon text-black font-bold rounded-lg hover:bg-white transition-colors shadow-[0_0_15px_rgba(0,255,170,0.2)]">
                     Download Original File
-                </button>
+                </a>
             </div>
             
             <script>
@@ -77,23 +77,6 @@
                         downloadContainer.classList.remove('hidden');
                     }
                 }, 1000);
-
-                async function triggerDownload(url, title) {
-                    try {
-                        const response = await fetch(url);
-                        const blob = await response.blob();
-                        const blobUrl = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = blobUrl;
-                        a.download = `Aura_${title.replace(/\s+/g, '_')}.jpg`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(blobUrl);
-                    } catch (err) {
-                        alert("Download failed. Please try again.");
-                    }
-                }
             </script>
         {% endif %}
     </div>
