@@ -127,15 +127,15 @@ def serve_wallpaper(wallpaper_id):
         # Get or create the tracker
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
         if not tracker:
-            tracker = AnonymousTracker(ip_address=user_ip, downloads=0)
+            tracker = AnonymousTracker(ip_address=user_ip, download_count=0)
             db.session.add(tracker)
             
         # Final safety check
-        if tracker.downloads >= 10:
+        if tracker.download_count >= 10:
             return redirect(url_for('register', limit_reached=True))
 
         # Log the download against their IP
-        tracker.downloads += 1
+        tracker.download_count += 1
         
     # Increment global wallpaper stats
     wallpaper.downloads += 1
