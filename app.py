@@ -124,6 +124,9 @@ def download_wallpaper(wallpaper_id):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # 1. Grab the limit flag immediately so the template always has it
+    limit_reached = request.args.get('limit_reached')
+
     # If they submit the form
     if request.method == 'POST':
         email = request.form.get('email')
@@ -137,7 +140,7 @@ def register():
             
         # Hash the password (PBKDF2 SHA256 is an industry standard)
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        
+
         # Create the user and save to PostgreSQL
         new_user = User(email=email, password_hash=hashed_password)
         db.session.add(new_user)
@@ -147,8 +150,8 @@ def register():
         login_user(new_user)
         return redirect(url_for('home'))
         
-    # If they are just visiting the page, show the form
-    return render_template('register.html')
+    # If they are just visiting the page, show the form and pass the flag
+    return render_template('register.html', limit_reached=limit_reached)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
