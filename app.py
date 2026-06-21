@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, session, request, redirect, url_for, flash
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security  import ProxyFix ,generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, Wallpaper, User, AnonymousTracker
 import secrets
@@ -8,6 +8,7 @@ from authlib.integrations.flask_client import OAuth
 
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # --- CONFIGURATION & DATABASE SETUP ---
 
@@ -93,10 +94,7 @@ def download_wallpaper(wallpaper_id):
     
     # 1. If they are NOT logged in, check the Bouncer before wasting their time
     if not current_user.is_authenticated:
-        if request.headers.getlist("X-Forwarded-For"):
-            user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
-        else:
-            user_ip = request.remote_addr
+        user_ip = request.remote_addr
 
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
 
