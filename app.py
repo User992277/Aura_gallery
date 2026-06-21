@@ -8,6 +8,11 @@ from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
 import time
 from flask_wtf.csrf import CSRFProtect
+import re
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(app=app, key_func=get_remote_address, default_limits=[])
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -156,6 +161,22 @@ def register():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+
+        # Regular expression pattern to verify authentic email formatting structures
+        EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+
+        # 1. Strictly validate email shape before hitting database queries
+        if not EMAIL_REGEX.match(email):
+            flash('Please enter a valid email address structure.', 'error')
+            return redirect(url_for('register'))
+
+        # 2. Enforce a minimum safety baseline for account passwords
+        if len(password) < 8:
+            flash('Security standard: Password must be at least 8 characters long.', 'error')
+            return redirect(url_for('register'))
         
         # Security Check: Does this email already exist?
         user = User.query.filter_by(email=email).first()
@@ -179,6 +200,7 @@ def register():
     return render_template('register.html', limit_reached=limit_reached)
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute; 50 per hour")
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
