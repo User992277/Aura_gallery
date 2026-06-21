@@ -174,34 +174,34 @@
             <!-- THE GRID -->
             <div id="masonry-grid" class="masonry-grid">
                 {% for wp in wallpapers %}
-                <div class="wallpaper-card break-inside-avoid relative group rounded-2xl overflow-hidden bg-midnight-800 cursor-pointer border border-midnight-700/50 hover:border-midnight-700 transition-colors stagger-grid mb-6" oncontextmenu="return false;">
-                    
-                    <div class="skeleton absolute inset-0 z-0"></div>
-                    
-                    <img src="{{ wp.image_url.replace('/upload/', '/upload/w_800,c_scale,q_auto:good/') }}" 
-                        alt="{{ wp.title }}" 
-                        class="pointer-events-none select-none"
-                         draggable="false" 
-                         onload="imageLoaded(this)">
-                    
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 flex flex-col justify-end p-5">
-                        <div class="flex justify-between items-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                            <div>
-                                <p class="text-xs text-accent-neon mb-1 uppercase tracking-wider font-semibold">{{ wp.category }}</p>
-                                <h3 class="text-lg font-medium text-white">{{ wp.title }}</h3>
-                            </div>
-                            <div class="flex gap-3">
-                                <button class="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-colors text-white" 
-                                        onclick="event.stopPropagation(); copySecureLink('{{ wp.id }}')">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                </button>
-                                <a href="/download/{{ wp.id }}" class="p-2 bg-accent-neon text-black hover:bg-white rounded-full transition-colors font-bold shadow-[0_0_15px_rgba(0,255,170,0.3)]">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                </a>
+                    <div class="wallpaper-card break-inside-avoid relative group rounded-2xl overflow-hidden bg-midnight-800 cursor-pointer border border-midnight-700/50 hover:border-midnight-700 transition-colors每日 stagger-grid mb-6" oncontextmenu="return false;">
+                        
+                        <div class="skeleton absolute inset-0 z-0"></div>
+                        
+                        <img src="{{ wp.image_url.replace('/upload/', '/upload/w_800,c_scale,q_auto:good/') }}" 
+                            alt="{{ wp.title }}" 
+                            class="w-full h-full object-cover pointer-events-none select-none transition-transform duration-700 ease-out group-hover:scale-105 will-change-transform z-10"
+                            draggable="false" 
+                            onload="imageLoaded(this)">
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 flex flex-col justify-end p-5">
+                            <div class="flex justify-between items-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                <div>
+                                    <p class="text-xs text-accent-neon mb-1 uppercase tracking-wider font-semibold">{{ wp.category }}</p>
+                                    <h3 class="text-lg font-medium text-white">{{ wp.title }}</h3>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button class="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-colors text-white" 
+                                            onclick="event.stopPropagation(); copySecureLink('{{ wp.id }}')">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    </button>
+                                    <a href="/download/{{ wp.id }}" class="p-2 bg-accent-neon text-black hover:bg-white rounded-full transition-colors font-bold shadow-[0_0_15px_rgba(0,255,170,0.3)]">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 {% endfor %}
             </div>
         {% endif %}
