@@ -7,7 +7,7 @@ import secrets
 from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
 import time
-
+from flask_wtf.csf import CSRFProtect
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -30,6 +30,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database with the app
 db.init_app(app)
+csrf = CSRFProtect(app)
 
 # --- AUTHENTICATION SETUP ---
 login_manager = LoginManager()
@@ -202,9 +203,9 @@ def google_login():
     return google.authorize_redirect(redirect_uri)
 
 # Route: The Callback (Where Google sends them back)
+# Route: The Callback (Where Google sends them back)
 @app.route('/auth/callback')
 def google_auth():
-    # 1. Grab the secure token Google just gave us
     token = google.authorize_access_token()
     user_info = token.get('userinfo')
     
@@ -214,21 +215,25 @@ def google_auth():
         
     email = user_info.get('email')
     
-    # 2. Check if this email is already in our database
+    # Check if this email already exists in our database
     user = User.query.filter_by(email=email).first()
     
-    # 3. If they don't exist, create an account for them instantly!
-    if not user:
-        # Generate a random 32-character password since they use Google to log in
+    if user:
+        # ⚠️ CRITICAL SECURITY CHECK: If they previously signed up manually with a password,
+        # do not let Google OAuth hijack or link into it automatically.
+        if user.auth_provider == 'password':
+            flash('An account with this email already exists via standard password login. Please log in using your password.', 'error')
+            return redirect(url_for('login'))
+    else:
+        # If they don't exist, create an account explicitly locked to the Google provider
         random_pass = secrets.token_hex(16)
         hashed_pass = generate_password_hash(random_pass, method='pbkdf2:sha256')
         
-        new_user = User(email=email, password_hash=hashed_pass)
+        new_user = User(email=email, password_hash=hashed_pass, auth_provider='google')
         db.session.add(new_user)
         db.session.commit()
-        user = new_user # Switch our reference to the newly created user
+        user = new_user 
         
-    # 4. Log them in and send them to the gallery
     login_user(user)
     return redirect(url_for('home'))
 
