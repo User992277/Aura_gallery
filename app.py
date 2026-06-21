@@ -6,6 +6,7 @@ from models import db, Wallpaper, User, AnonymousTracker
 import secrets
 from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
+import time
 
 
 app = Flask(__name__)
@@ -88,23 +89,21 @@ def search():
     return render_template('index.html', wallpapers=filtered_wallpapers, current_category=display_category)
 
 # Route: Secure Download & IP Tracking
-# Route 1: The Gateway & Timer Page
+# Route: Secure Download Gateway & Timer Page
 @app.route('/download/<int:wallpaper_id>')
 def download_wallpaper(wallpaper_id):
     wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
     
-    # 1. If they are NOT logged in, check the Bouncer before wasting their time
+    # 1. Quota Check for non-authenticated users
     if not current_user.is_authenticated:
         user_ip = request.remote_addr
-
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
-
-        # If they hit the limit, block them immediately
         if tracker and tracker.download_count >= 10:
             return redirect(url_for('register', limit_reached=True))
 
-    # 2. If they pass the check (or are premium), show them the ad/timer page
-    # 2. If they pass the check (or are premium), show them the ad/timer page
+    # 2. CREATE THE GATE TOKEN: Record the exact entry timestamp in the session
+    session[f'gate_{wallpaper_id}'] = time.time()
+
     return render_template('gateway.html', 
                            wallpaper=wallpaper, 
                            is_locked=False, 
@@ -112,35 +111,38 @@ def download_wallpaper(wallpaper_id):
                            status_message="Fetching from secure vault...")
 
 
-# Route 2: The Actual File Delivery (Triggered after 5 seconds)
+# Route: The Actual File Delivery (Triggered after 5 seconds)
 @app.route('/serve/<int:wallpaper_id>')
 def serve_wallpaper(wallpaper_id):
     wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
     
-    if not current_user.is_authenticated:
-        if request.headers.getlist("X-Forwarded-For"):
-            user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
-        else:
-            user_ip = request.remote_addr
+    # 1. VERIFY THE GATE TOKEN
+    gate_time = session.get(f'gate_{wallpaper_id}')
+    
+    # If they never saw the gateway page, or tried to skip the 5-second wait time
+    if not gate_time or (time.time() - gate_time) < 5:
+        flash("Please wait for the timer to complete before downloading.", "error")
+        return redirect(url_for('download_wallpaper', wallpaper_id=wallpaper_id))
 
-        # Get or create the tracker
+    # 2. CONSUME TOKEN: Make it single-use so they can't bookmark/replay the direct download link
+    session.pop(f'gate_{wallpaper_id}', None)
+    
+    # 3. Double-check limits for anonymous users
+    if not current_user.is_authenticated:
+        user_ip = request.remote_addr
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
         if not tracker:
             tracker = AnonymousTracker(ip_address=user_ip, download_count=0)
             db.session.add(tracker)
             
-        # Final safety check
         if tracker.download_count >= 10:
             return redirect(url_for('register', limit_reached=True))
 
-        # Log the download against their IP
         tracker.download_count += 1
         
-    # Increment global wallpaper stats
     wallpaper.downloads += 1
     db.session.commit()
     
-    # Force the file download
     download_url = wallpaper.image_url.replace('/upload/', '/upload/fl_attachment/')
     return redirect(download_url)
 
