@@ -96,9 +96,9 @@ def search():
 
 # Route: Secure Download & IP Tracking
 # Route: Secure Download Gateway & Timer Page
-@app.route('/download/<int:wallpaper_id>')
+@app.route('/download/<string:wallpaper_id>')
 def download_wallpaper(wallpaper_id):
-    wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
+    wallpaper = Wallpaper.query.get_or_404(str(wallpaper_id))
     
     # 1. Quota Check for non-authenticated users
     if not current_user.is_authenticated:
@@ -118,9 +118,9 @@ def download_wallpaper(wallpaper_id):
 
 
 # Route: The Actual File Delivery (Triggered after 5 seconds)
-@app.route('/serve/<int:wallpaper_id>')
+@app.route('/serve/<string:wallpaper_id>')
 def serve_wallpaper(wallpaper_id):
-    wallpaper = Wallpaper.query.get_or_404(wallpaper_id)
+    wallpaper = Wallpaper.query.get_or_404(str(wallpaper_id))
     
     # 1. VERIFY THE GATE TOKEN
     gate_time = session.get(f'gate_{wallpaper_id}')
