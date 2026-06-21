@@ -12,11 +12,11 @@ import re
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-limiter = Limiter(app=app, key_func=get_remote_address, default_limits=[])
+
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-
+limiter = Limiter(app=app, key_func=get_remote_address, default_limits=[])
 # --- CONFIGURATION & DATABASE SETUP ---
 
 # The Secret Key protects the user session data.
