@@ -238,11 +238,13 @@ def google_auth():
     return redirect(url_for('home'))
 
 # Route: Secure Logout
-@app.route('/logout')
+# Route: Secure Logout
+@app.route('/logout', methods=['POST'])  # Changed from GET to POST
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
