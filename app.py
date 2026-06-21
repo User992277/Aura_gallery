@@ -104,7 +104,7 @@ def download_wallpaper(wallpaper_id):
     if not current_user.is_authenticated:
         user_ip = request.remote_addr
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
-        if tracker and tracker.download_count >= 10:
+        if tracker and int(tracker.download_count) >= 10:
             return redirect(url_for('register', limit_reached=True))
 
     # 2. CREATE THE GATE TOKEN: Record the exact entry timestamp in the session
@@ -141,14 +141,19 @@ def serve_wallpaper(wallpaper_id):
             tracker = AnonymousTracker(ip_address=user_ip, download_count=0)
             db.session.add(tracker)
             
-        if tracker.download_count >= 10:
+        # FIX 1: Explicitly cast to integer for the comparison check
+        if int(tracker.download_count) >= 10:
             return redirect(url_for('register', limit_reached=True))
 
-        tracker.download_count += 1
+        # FIX 2: Explicitly cast to integer before adding 1, then save back as string
+        tracker.download_count = str(int(tracker.download_count) + 1)
         
-    wallpaper.downloads += 1
+    # FIX 3: Explicitly cast the main wallpaper download counter before incrementing
+    wallpaper.downloads = str(int(wallpaper.downloads) + 1)
+    
     db.session.commit()
     
+    # Cloudinary optimization handling securely intact
     download_url = wallpaper.image_url.replace('/upload/', '/upload/fl_attachment/')
     return redirect(download_url)
 
