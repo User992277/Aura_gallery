@@ -352,6 +352,32 @@
         </div>
     </div>
 
+    <div id="cookie-banner" class="fixed bottom-6 left-6 right-6 md:left-auto md:max-w-md z-50 bg-midnight-800/95 backdrop-blur-md border border-midnight-700 p-5 rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.5)] transform translate-y-20 opacity-0 transition-all duration-500 hidden">
+        <div class="flex flex-col gap-4">
+            <div class="flex items-start gap-3">
+                <div class="p-2 bg-accent-neon/10 rounded-xl text-accent-neon shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-white">Cookie & Security Notice</h4>
+                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">
+                        Aura uses essential cookies to securely manage your session login, handle CSRF security tokens, and maintain your download quota counters.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 text-xs font-medium">
+                <button onclick="handleCookie(false)" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                    Decline
+                </button>
+                <button onclick="handleCookie(true)" class="px-4 py-2 bg-accent-neon text-black rounded-xl hover:bg-white transition-colors shadow-[0_0_15px_rgba(0,255,170,0.2)]">
+                    Accept All
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function openModal(modalID) {
             const modal = document.getElementById(modalID);
@@ -383,6 +409,37 @@
             if (event.target.id === 'terms-modal' || event.target.id === 'privacy-modal') {
                 closeModal(event.target.id);
             }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Check if the user has already made a choice
+            const cookieChoice = localStorage.getItem("cookieConsent");
+            
+            if (!cookieChoice) {
+                const banner = document.getElementById("cookie-banner");
+                banner.classList.remove("hidden");
+                // Smoothly slide and fade in
+                setTimeout(() => {
+                    banner.classList.remove("translate-y-20", "opacity-0");
+                }, 300);
+            }
+        });
+
+        function handleCookie(accepted) {
+            const banner = document.getElementById("cookie-banner");
+            
+            // Save selection to localStorage
+            if (accepted) {
+                localStorage.setItem("cookieConsent", "accepted");
+            } else {
+                localStorage.setItem("cookieConsent", "declined");
+            }
+            
+            // Smoothly animate out
+            banner.classList.add("translate-y-20", "opacity-0");
+            setTimeout(() => {
+                banner.classList.add("hidden");
+            }, 500);
         }
     </script>
     
