@@ -26,7 +26,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # The new folders you created
-FOLDERS = ['cars', 'nature', 'space', 'anime','minimalist','surreal','cyberpunk','fluid']
+FOLDERS = ['cars', 'anime']
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def seed_db():

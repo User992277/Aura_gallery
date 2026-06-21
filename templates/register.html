@@ -84,11 +84,107 @@
                 </a>
             </div>
         </div>
+        <p class="text-xs text-gray-500 mt-4">
+
+            By continuing, you agree to Aura's 
+            <button onclick="openModal('terms-modal')" class="text-accent-neon hover:underline">Terms of Service</button> and 
+            <button onclick="openModal('privacy-modal')" class="text-accent-neon hover:underline">Privacy Policy</button>.
+        </p>
 
         <p class="text-center text-gray-500 text-sm mt-8">
             Already have an account? 
             <a href="{{ url_for('login') }}" class="text-white font-semibold hover:underline transition-all">Sign In</a>
         </p>
     </div>
+    <div id="terms-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-midnight-800 border border-midnight-700 rounded-2xl max-w-2xl w-full max-h-[80vh] mx-4 flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] transform scale-95 transition-transform duration-300">
+        
+            <div class="flex justify-between items-center p-6 border-b border-midnight-700">
+                <h2 class="text-2xl font-serif text-white">Terms of Service</h2>
+                <button onclick="closeModal('terms-modal')" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        
+            <div class="p-6 overflow-y-auto text-sm text-gray-300 space-y-4 custom-scrollbar">
+                <p><strong>1. Personal Use Only</strong><br>
+                All wallpapers and digital assets hosted on Aura Gallery are provided strictly for personal, non-commercial use (e.g., as desktop or mobile device backgrounds). You may not sell, redistribute, or use these assets in commercial projects without explicit permission.</p>
+
+                <p><strong>2. Account & Download Limits</strong><br>
+                Unregistered guest users are subject to a strict 10-download limit, enforced via IP tracking. Attempting to bypass this limit using VPNs or automated scripts is a violation of these terms. Aura Gallery reserves the right to suspend or terminate any account or block any IP address involved in scraping or network abuse.</p>
+
+                <p><strong>3. Copyright & Takedowns (DMCA)</strong><br>
+                Aura Gallery respects the intellectual property of digital artists. If you believe your copyrighted work is being hosted on this platform without authorization, please contact us immediately for removal. We will promptly investigate and execute a takedown upon verification.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="privacy-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-midnight-800 border border-midnight-700 rounded-2xl max-w-2xl w-full max-h-[80vh] mx-4 flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] transform scale-95 transition-transform duration-300">
+            
+            <div class="flex justify-between items-center p-6 border-b border-midnight-700">
+                <h2 class="text-2xl font-serif text-white">Privacy Policy</h2>
+                <button onclick="closeModal('privacy-modal')" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto text-sm text-gray-300 space-y-4 custom-scrollbar">
+                <p><strong>1. Information We Collect</strong><br>
+                When you use Aura Gallery, we securely collect specific data to maintain platform integrity. For unregistered guests, we log your <strong>IP address</strong> solely for rate-limiting purposes. For registered users, we collect your <strong>Email Address</strong> (either provided directly or via Google OAuth) to manage your premium access.</p>
+
+                <p><strong>2. How We Store Your Data</strong><br>
+                Your account credentials and download history are stored securely in our encrypted PostgreSQL database. Passwords are hashed using industry-standard PBKDF2 SHA256 encryption. We cannot see, and do not store, plaintext passwords.</p>
+
+                <p><strong>3. Third-Party Services</strong><br>
+                To provide a seamless experience, Aura Gallery utilizes trusted third-party infrastructure. We use <strong>Cloudinary</strong> for high-speed image delivery and <strong>Google Workspace</strong> for secure OAuth authentication. These providers adhere to strict international data protection standards.</p>
+                
+                <p><strong>4. Your Rights</strong><br>
+                You have the right to request the deletion of your account and associated data at any time by contacting our support team.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        function openModal(modalID) {
+            const modal = document.getElementById(modalID);
+            const modalBox = modal.querySelector('div');
+            
+            modal.classList.remove('hidden');
+            // Small delay to allow display:block to apply before animating opacity
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalBox.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal(modalID) {
+            const modal = document.getElementById(modalID);
+            const modalBox = modal.querySelector('div');
+            
+            modal.classList.add('opacity-0');
+            modalBox.classList.add('scale-95');
+            
+            // Wait for animation to finish before hiding the element
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Close modal if user clicks outside the box
+        window.onclick = function(event) {
+            if (event.target.id === 'terms-modal' || event.target.id === 'privacy-modal') {
+                closeModal(event.target.id);
+            }
+        }
+    </script>
+
+
+
+
+
+    
+    
 </body>
 </html>
