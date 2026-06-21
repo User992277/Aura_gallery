@@ -256,39 +256,7 @@
         </div>
     </footer>
 
-    <script>
-        function openModal(modalID) {
-            const modal = document.getElementById(modalID);
-            const modalBox = modal.querySelector('div');
-            
-            modal.classList.remove('hidden');
-            // Small delay to allow display:block to apply before animating opacity
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modalBox.classList.remove('scale-95');
-            }, 10);
-        }
-
-        function closeModal(modalID) {
-            const modal = document.getElementById(modalID);
-            const modalBox = modal.querySelector('div');
-            
-            modal.classList.add('opacity-0');
-            modalBox.classList.add('scale-95');
-            
-            // Wait for animation to finish before hiding the element
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        // Close modal if user clicks outside the box
-        window.onclick = function(event) {
-            if (event.target.id === 'terms-modal' || event.target.id === 'privacy-modal') {
-                closeModal(event.target.id);
-            }
-        }
-    </script>
+    
 
     <!-- GSAP Animations & Scripts -->
     <script>
@@ -365,6 +333,39 @@
             setTimeout(() => {
                 toast.style.opacity = '0';
             }, 2500);
+        }
+    </script>
+    <script>
+        function openModal(modalID) {
+            const modal = document.getElementById(modalID);
+            const modalBox = modal.querySelector('div');
+            
+            modal.classList.remove('hidden');
+            // Small delay to allow display:block to apply before animating opacity
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalBox.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal(modalID) {
+            const modal = document.getElementById(modalID);
+            const modalBox = modal.querySelector('div');
+            
+            modal.classList.add('opacity-0');
+            modalBox.classList.add('scale-95');
+            
+            // Wait for animation to finish before hiding the element
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Close modal if user clicks outside the box
+        window.onclick = function(event) {
+            if (event.target.id === 'terms-modal' || event.target.id === 'privacy-modal') {
+                closeModal(event.target.id);
+            }
         }
     </script>
 </body>
