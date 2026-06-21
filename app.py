@@ -1,10 +1,11 @@
 import os
 from flask import Flask, render_template, session, request, redirect, url_for, flash
-from werkzeug.security  import ProxyFix ,generate_password_hash, check_password_hash
+from werkzeug.security  import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, Wallpaper, User, AnonymousTracker
 import secrets
 from authlib.integrations.flask_client import OAuth
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 app = Flask(__name__)
