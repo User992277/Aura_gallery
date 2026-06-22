@@ -24,19 +24,33 @@
         }
     </script>
     <style>
-        body { background-color: #0a0a0c; color: #ffffff; overflow-x: hidden; }
+        /* Base Theme: Slate & Sand (Organic stone with wood accents) */
+        :root {
+            --color-mid-900: #18181B; /* Soft neutral slate */
+            --color-mid-800: #27272A; /* Card slate */
+            --color-mid-700: #3F3F46; /* Border slate */
+            --color-accent: #D4A373;  /* Warm Sand / Crafted Wood */
+        }
+        
+        /* Alternate Theme: Charcoal & Clay (Earthy darks with terracotta) */
+        body.theme-earth {
+            --color-mid-900: #1C1917; /* Deep warm charcoal */
+            --color-mid-800: #292524; /* Card charcoal */
+            --color-mid-700: #44403C; /* Border charcoal */
+            --color-accent: #C85A5A;  /* Muted Terracotta / Clay */
+        }
+
+        body { background-color: var(--color-mid-900); color: #ffffff; overflow-x: hidden; transition: background-color 0.5s ease; }
         .masonry-grid { column-count: 1; column-gap: 1.5rem; }
         @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
         @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
         @media (min-width: 1280px) { .masonry-grid { column-count: 4; } }
         
-        /* Subtle skeleton loading animation */
         @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-        .skeleton { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; background: linear-gradient(90deg, #121316 25%, #1a1c23 50%, #121316 75%); background-size: 200% 100%; }
+        .skeleton { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; background: linear-gradient(90deg, var(--color-mid-800) 25%, var(--color-mid-700) 50%, var(--color-mid-800) 75%); background-size: 200% 100%; }
         
-        /* Custom Search Input Autofill fix */
         input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px #121316 inset !important;
+            -webkit-box-shadow: 0 0 0 30px var(--color-mid-800) inset !important;
             -webkit-text-fill-color: white !important;
         }
     </style>
@@ -448,7 +462,7 @@
             <div>
                 <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Interface Customizer</h4>
                 <div class="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
-                    <span class="text-xs text-gray-300">Midnight Emerald Mode</span>
+                    <span id="theme-text" class="text-xs text-gray-300 transition-colors duration-300">Slate & Sand Mode</span>
                     <button type="button" onclick="toggleThemeAccent()" id="theme-toggle" class="w-10 h-6 bg-accent-neon rounded-full p-1 transition-colors duration-300 relative flex items-center cursor-pointer">
                         <div id="theme-dot" class="w-4 h-4 bg-black rounded-full shadow transform translate-x-4 transition-transform duration-300"></div>
                     </button>
@@ -549,24 +563,27 @@
         function toggleThemeAccent() {
             const btn = document.getElementById('theme-toggle');
             const dot = document.getElementById('theme-dot');
+            const themeText = document.getElementById('theme-text');
             
-            // Check current tracking state using classes
-            if (btn.classList.contains('bg-accent-neon')) {
-                // Shift to Deeper Obsidian Jet mode
+            // Toggle the theme-earth class on the body
+            const isEarth = document.body.classList.toggle('theme-earth');
+            
+            if (isEarth) {
+                // Shift to Charcoal & Clay
                 btn.classList.remove('bg-accent-neon');
                 btn.classList.add('bg-midnight-700');
                 dot.classList.remove('translate-x-4');
                 dot.classList.add('translate-x-0');
-                dot.style.backgroundColor = '#9ca3af'; // light gray dot
-                document.body.style.setProperty('background-color', '#020203', 'important');
+                dot.style.backgroundColor = '#C85A5A'; // Terracotta dot
+                themeText.innerText = "Charcoal & Clay Mode";
             } else {
-                // Shift back to Midnight Slate mode
+                // Shift back to Slate & Sand
                 btn.classList.remove('bg-midnight-700');
                 btn.classList.add('bg-accent-neon');
                 dot.classList.remove('translate-x-0');
                 dot.classList.add('translate-x-4');
-                dot.style.backgroundColor = '#000000'; // black dot
-                document.body.style.setProperty('background-color', '#0a0a0c', 'important');
+                dot.style.backgroundColor = '#18181B'; // Slate dot
+                themeText.innerText = "Slate & Sand Mode";
             }
         }
     </script>
