@@ -60,17 +60,39 @@ def load_user(user_id):
 @app.route('/')
 def home():
     all_wallpapers = Wallpaper.query.all()
-    return render_template('index.html', wallpapers=all_wallpapers, current_category="Discover")
+    history = []
+    if current_user.is_authenticated:
+        res = db.session.execute(
+            db.text("SELECT w.* FROM wallpapers w JOIN user_downloads d ON w.id = d.wallpaper_id WHERE d.user_id = :u_id ORDER BY d.downloaded_at DESC"),
+            {"u_id": current_user.id}
+        )
+        history = res.fetchall()
+    return render_template('index.html', wallpapers=all_wallpapers, current_category="Discover", history=history)
 
 @app.route('/category/<string:category_name>')
 def category_view(category_name):
     clean_name = category_name.capitalize()
     filtered_wallpapers = Wallpaper.query.filter_by(category=clean_name).all()
-    return render_template('index.html', wallpapers=filtered_wallpapers, current_category=clean_name)
+    history = []
+    if current_user.is_authenticated:
+        res = db.session.execute(
+            db.text("SELECT w.* FROM wallpapers w JOIN user_downloads d ON w.id = d.wallpaper_id WHERE d.user_id = :u_id ORDER BY d.downloaded_at DESC"),
+            {"u_id": current_user.id}
+        )
+        history = res.fetchall()
+    return render_template('index.html', wallpapers=filtered_wallpapers, current_category=clean_name, history=history)
 
 @app.route('/search')
 def search():
     query = request.args.get('q', '').strip()
+    history = []
+    if current_user.is_authenticated:
+        res = db.session.execute(
+            db.text("SELECT w.* FROM wallpapers w JOIN user_downloads d ON w.id = d.wallpaper_id WHERE d.user_id = :u_id ORDER BY d.downloaded_at DESC"),
+            {"u_id": current_user.id}
+        )
+        history = res.fetchall()
+        
     if query:
         search_term = f"%{query}%"
         filtered_wallpapers = Wallpaper.query.filter(
@@ -80,7 +102,7 @@ def search():
     else:
         filtered_wallpapers = Wallpaper.query.all()
         display_category = "Discover"
-    return render_template('index.html', wallpapers=filtered_wallpapers, current_category=display_category)
+    return render_template('index.html', wallpapers=filtered_wallpapers, current_category=display_category, history=history)
 
 @app.route('/download/<string:wallpaper_id>')
 def download_wallpaper(wallpaper_id):
@@ -110,7 +132,16 @@ def serve_wallpaper(wallpaper_id):
 
     session.pop(f'gate_{wallpaper_id}', None)
     
-    if not current_user.is_authenticated:
+    if current_user.is_authenticated:
+        # Save to User's Download History Vault using raw SQL execution to prevent model alignment breaks
+        try:
+            db.session.execute(
+                db.text("INSERT INTO user_downloads (user_id, wallpaper_id) VALUES (:u_id, :w_id) ON CONFLICT DO NOTHING"),
+                {"u_id": current_user.id, "w_id": wallpaper.id}
+            )
+        except Exception as e:
+            db.session.rollback()
+    else:
         user_ip = request.remote_addr
         tracker = AnonymousTracker.query.filter_by(ip_address=user_ip).first()
         if not tracker:
