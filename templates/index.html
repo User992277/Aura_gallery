@@ -176,6 +176,24 @@
             <!-- THE GRID -->
             <div id="masonry-grid" class="masonry-grid">
                 {% for wp in wallpapers %}
+                
+                    {% if loop.index == 4 %}
+                    <div class="wallpaper-card break-inside-avoid relative rounded-2xl overflow-hidden bg-midnight-800/40 border border-midnight-700/60 p-4 flex flex-col items-center justify-center min-h-[300px] mb-6 stagger-grid">
+                        <span class="text-[10px] text-gray-600 uppercase tracking-widest mb-3 block">Sponsored</span>
+                        
+                        <script>
+                          atOptions = {
+                            'key' : '36d489d50a9e3b1cf912722acee29db0',
+                            'format' : 'iframe',
+                            'height' : 250,
+                            'width' : 300,
+                            'params' : {}
+                          };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/36d489d50a9e3b1cf912722acee29db0/invoke.js"></script>
+                        
+                    </div>
+                    {% endif %}
                     <div class="wallpaper-card break-inside-avoid relative group rounded-2xl overflow-hidden bg-midnight-800 cursor-pointer border border-midnight-700/50 hover:border-midnight-700 transition-colors每日 stagger-grid mb-6" oncontextmenu="return false;">
                         
                         <div class="skeleton absolute inset-0 z-0"></div>
