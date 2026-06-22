@@ -187,8 +187,21 @@ def google_login():
     redirect_uri = url_for('google_auth', _external=True)
     return google.authorize_redirect(redirect_uri)
 
+@app.route('/login/google')
+def google_login():
+    # 1. The initial trigger button routes here. We build and secure the callback URL:
+    redirect_uri = url_for('google_auth', _external=True)
+    if redirect_uri.startswith("http://"):
+        redirect_uri = redirect_uri.replace("http://", "https://", 1)
+        
+    # 2. Then we send them outward to Google's sign-in screen
+    return google.authorize_redirect(redirect_uri)
+
+
 @app.route('/auth/callback')
 def google_auth():
+    # 3. Google bounces them back here with the authorization tokens. 
+    # We parse the incoming tokens to read their identity data:
     token = google.authorize_access_token()
     user_info = token.get('userinfo')
     
@@ -211,8 +224,9 @@ def google_auth():
         new_user = User(id=str(secrets.token_hex(8)), email=email, password_hash=hashed_pass, auth_provider='google')
         db.session.add(new_user)
         db.session.commit()
-        user = new_user 
+        user = new_user  
         
+    # 4. Log the user into Flask-Login session state and send them home!
     login_user(user)
     return redirect(url_for('home'))
 
