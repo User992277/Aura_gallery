@@ -185,17 +185,13 @@ def login():
 @app.route('/login/google')
 def google_login():
     redirect_uri = url_for('google_auth', _external=True)
-    return google.authorize_redirect(redirect_uri)
-
-@app.route('/login/google')
-def google_login():
-    # 1. The initial trigger button routes here. We build and secure the callback URL:
-    redirect_uri = url_for('google_auth', _external=True)
+    
+    # Force the generated URL scheme to strictly use HTTPS for production environments
     if redirect_uri.startswith("http://"):
         redirect_uri = redirect_uri.replace("http://", "https://", 1)
         
-    # 2. Then we send them outward to Google's sign-in screen
     return google.authorize_redirect(redirect_uri)
+
 
 
 @app.route('/auth/callback')
